@@ -482,6 +482,7 @@ $RECYCLE.BIN/
 *.swp
 
 # Project-specific ignores (MiniSalesOrderApp)
-MiniSalesOrderApp/bin/verify-build*/
+MiniSalesOrderApp/bin/
+MiniSalesOrderApp/obj/
 MiniSalesOrderApp/appsettings.Local.json
 MiniSalesOrderApp/appsettings.*.local.json
