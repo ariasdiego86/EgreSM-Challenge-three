@@ -93,8 +93,13 @@ public class OrderService : IOrderService
         };
 
         await _orderRepository.AddItemAsync(item, cancellationToken);
-        order.Items.Add(item);
-        RecalculateOrderTotal(order);
+
+        // Recalculate using distinct item ids to prevent transient in-memory duplicates.
+        order.TotalAmount = order.Items
+            .Concat(new[] { item })
+            .GroupBy(x => x.Id)
+            .Sum(x => x.First().TotalPrice);
+
         await _orderRepository.UpdateAsync(order, cancellationToken);
         await _orderRepository.SaveChangesAsync(cancellationToken);
     }
@@ -110,8 +115,12 @@ public class OrderService : IOrderService
             ?? throw new KeyNotFoundException($"Order item with id {orderItemId} was not found in order {orderId}.");
 
         await _orderRepository.RemoveItemAsync(orderItemId, cancellationToken);
-        order.Items.Remove(item);
-        RecalculateOrderTotal(order);
+
+        // Recalculate using the resulting set (excluding removed item id) instead of relying on reference removal.
+        order.TotalAmount = order.Items
+            .Where(x => x.Id != orderItemId)
+            .Sum(x => x.TotalPrice);
+
         await _orderRepository.UpdateAsync(order, cancellationToken);
         await _orderRepository.SaveChangesAsync(cancellationToken);
     }
@@ -148,11 +157,6 @@ public class OrderService : IOrderService
 
         await _orderRepository.DeleteAsync(orderId, cancellationToken);
         await _orderRepository.SaveChangesAsync(cancellationToken);
-    }
-
-    private static void RecalculateOrderTotal(Order order)
-    {
-        order.TotalAmount = order.Items.Sum(x => x.TotalPrice);
     }
 
     private static void EnsureOrderIsEditable(Order order)
