@@ -1,0 +1,161 @@
+@model MiniSalesOrderApp.Web.ViewModels.Orders.OrderDetailsViewModel
+
+@{
+    ViewData["Title"] = "Order Details";
+    var isInvoiced = Model.Status == MiniSalesOrderApp.Domain.OrderStatus.Invoiced;
+    var statusClass = Model.Status switch
+    {
+        MiniSalesOrderApp.Domain.OrderStatus.Draft => "bg-secondary",
+        MiniSalesOrderApp.Domain.OrderStatus.Processing => "bg-info text-dark",
+        MiniSalesOrderApp.Domain.OrderStatus.Shipped => "bg-primary",
+        MiniSalesOrderApp.Domain.OrderStatus.Invoiced => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">Order Details</h1>
+        <p class="text-muted mb-0">Customer: <strong>@Model.CustomerName</strong></p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</div>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Status</div>
+                <span class="badge rounded-pill @statusClass mt-2">@Model.Status</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Order Date</div>
+                <div class="fw-semibold mt-2">@Model.OrderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Items</div>
+                <div class="fw-semibold mt-2">@Model.Items.Count</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total</div>
+                <div class="fw-semibold mt-2">@Model.TotalAmount.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    @if (isInvoiced)
+    {
+        <button type="button" class="btn btn-outline-dark" disabled>Edit Customer</button>
+        <button type="button" class="btn btn-primary" disabled>Add Product</button>
+    }
+    else
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit Customer</a>
+        <a asp-action="AddProduct" asp-route-orderId="@Model.Id" class="btn btn-primary">Add Product</a>
+    }
+
+    @if (Model.NextAllowedStatus.HasValue)
+    {
+        <form asp-action="UpdateStatus" method="post" class="d-inline">
+            <input type="hidden" name="orderId" value="@Model.Id" />
+            <input type="hidden" name="newStatus" value="@Model.NextAllowedStatus" />
+            <button type="submit" class="btn btn-outline-primary">Move to @Model.NextAllowedStatus</button>
+        </form>
+    }
+
+    @if (isInvoiced)
+    {
+        <button type="button" class="btn btn-outline-danger" disabled>Delete Order</button>
+    }
+    else
+    {
+        <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this order?');">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-outline-danger">Delete Order</button>
+        </form>
+    }
+</div>
+
+@if (isInvoiced)
+{
+    <div class="alert alert-warning" role="alert">
+        This order is invoiced and can no longer be modified.
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h2 class="h6 mb-0">Products</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Product</th>
+                    <th class="text-end">Qty</th>
+                    <th class="text-end">Unit Price</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No products in this order.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                            <td class="text-end">@item.TotalPrice.ToString("C")</td>
+                            <td class="text-end">
+                                @if (isInvoiced)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" disabled>Remove</button>
+                                }
+                                else
+                                {
+                                    <form asp-action="RemoveProduct" method="post" class="d-inline" onsubmit="return confirm('Remove this product?');">
+                                        <input type="hidden" name="orderId" value="@Model.Id" />
+                                        <input type="hidden" name="orderItemId" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

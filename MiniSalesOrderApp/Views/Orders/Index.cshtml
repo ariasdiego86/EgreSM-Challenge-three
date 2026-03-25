@@ -1,0 +1,141 @@
+@model MiniSalesOrderApp.Web.ViewModels.Orders.OrdersIndexViewModel
+
+@{
+    ViewData["Title"] = "Orders";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Sales Orders</h1>
+        <p class="text-muted mb-0">Track and manage customer orders.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">New Order</a>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="searchCustomer" class="form-label">Customer</label>
+                <input id="searchCustomer" name="searchCustomer" value="@Model.SearchCustomer" class="form-control" placeholder="Search by customer name" />
+            </div>
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select id="statusFilter" name="statusFilter" class="form-select">
+                    <option value="">All</option>
+                    @foreach (var status in Enum.GetValues<MiniSalesOrderApp.Domain.OrderStatus>())
+                    {
+                        if (Model.StatusFilter == status)
+                        {
+                            <option value="@status" selected>@status</option>
+                        }
+                        else
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="pageSize" class="form-label">Page Size</label>
+                <select id="pageSize" name="pageSize" class="form-select">
+                    @foreach (var size in new[] { 5, 10, 20, 50 })
+                    {
+                        if (Model.PageSize == size)
+                        {
+                            <option value="@size" selected>@size</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="text-end">Items</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Orders.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No orders yet.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td>@order.CustomerName</td>
+                            <td>@order.OrderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                <span class="badge rounded-pill bg-secondary">@order.Status</span>
+                            </td>
+                            <td class="text-end">@order.ItemsCount</td>
+                            <td class="text-end">@order.TotalAmount.ToString("C")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">Showing @Model.Orders.Count of @Model.TotalItems order(s)</div>
+    <nav aria-label="Order pagination">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : null)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-pageNumber="@(Model.PageNumber - 1)"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-searchCustomer="@Model.SearchCustomer"
+                   asp-route-statusFilter="@Model.StatusFilter">Previous</a>
+            </li>
+
+            <li class="page-item disabled"><span class="page-link">Page @Model.PageNumber of @Model.TotalPages</span></li>
+
+            <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : null)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-pageNumber="@(Model.PageNumber + 1)"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-searchCustomer="@Model.SearchCustomer"
+                   asp-route-statusFilter="@Model.StatusFilter">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
