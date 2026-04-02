@@ -1,0 +1,81 @@
+@model MiniSalesOrderApp.Web.ViewModels.ExternalProducts.ProductPaginationResponseDto
+
+@{
+    ViewData["Title"] = "Productos Externos";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Productos Externos</h1>
+        <p class="text-muted mb-0">Listado paginado consumido desde una API externa.</p>
+    </div>
+</div>
+
+@if (ViewData["ExternalProductsError"] is string errorMessage)
+{
+    <div class="alert alert-warning" role="alert">
+        @errorMessage
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Numero</th>
+                    <th class="text-end">Precio Lista</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Data is null || !Model.Data.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No hay productos para mostrar.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var product in Model.Data)
+                    {
+                        <tr>
+                            <td>@product.ProductID</td>
+                            <td>@product.Name</td>
+                            <td>@product.ProductNumber</td>
+                            <td class="text-end">@product.ListPrice.ToString("C")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">Pagina @Model.Pagina de @Model.TotalPaginas</div>
+    <nav aria-label="Paginacion productos externos">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.Pagina == 1 ? "disabled" : null)">
+                <a class="page-link"
+                   asp-controller="ExternalProducts"
+                   asp-action="Index"
+                   asp-route-pagina="@(Model.Pagina - 1)"
+                   asp-route-cantidad="@Model.CantidadSolicitada">Anterior</a>
+            </li>
+
+            <li class="page-item disabled">
+                <span class="page-link">Pagina @Model.Pagina de @Model.TotalPaginas</span>
+            </li>
+
+            <li class="page-item @(Model.Pagina == Model.TotalPaginas ? "disabled" : null)">
+                <a class="page-link"
+                   asp-controller="ExternalProducts"
+                   asp-action="Index"
+                   asp-route-pagina="@(Model.Pagina + 1)"
+                   asp-route-cantidad="@Model.CantidadSolicitada">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+</div>
